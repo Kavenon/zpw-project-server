@@ -15,7 +15,8 @@ const Order = new Schema({
             currency: String
         },
         amount: Number
-    }]
+    }],
+    status: String
 });
 
 mongoose.model('Order', Order);

@@ -18,6 +18,23 @@ router.get('/order', function (req, res) {
 
 });
 
+router.post('/order/:id/done', function (req, res) {
+
+    guard(req).then(_ => {
+        OrderModel.findByIdAndUpdate(req.params.id, {
+            $set: {
+                status: 'DONE',
+            }
+        }, function (err, order) {
+            res.json(order);
+        });
+    })
+        .catch(_ => {
+            res.send(401);
+        });
+
+});
+
 router.post('/order', function (req, res) {
 
     const items = req.body.items.map(item => {
@@ -27,7 +44,7 @@ router.post('/order', function (req, res) {
                 value: item.price.value,
                 currency: item.price.currency
             },
-            amount: item.amount
+            amount: item.amount,
         }
     });
     new OrderModel({
@@ -37,7 +54,8 @@ router.post('/order', function (req, res) {
             value: req.body.totalValue.value,
             currency: req.body.totalValue.currency
         },
-        items: items
+        items: items,
+        status: req.body.status
     }).save(function (err, product) {
         res.json(product);
     });
