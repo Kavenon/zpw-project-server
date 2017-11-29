@@ -1,12 +1,15 @@
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
+const busboyBodyParser = require('busboy-body-parser');
 
+app.use('/uploads', express.static('uploads'));
+app.use(busboyBodyParser());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(bodyParser.json()); // parse application/json
 app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Cache-Control");
     res.header("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT,DELETE");
     next();
 });
@@ -27,6 +30,7 @@ require('./auth');
 app.use(require('./order.route'));
 app.use(require('./product.route'));
 app.use(require('./category.route'));
+app.use(require('./upload.route'));
 
 
 app.listen(5000);

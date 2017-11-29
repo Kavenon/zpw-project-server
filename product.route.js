@@ -53,7 +53,8 @@ router.post('/product', function (req, res) {
             price: {
                 value: req.body.price.value,
                 currency: req.body.price.currency
-            }
+            },
+            photos: req.body.photos
         }).save(function (err, product) {
             res.json(product);
         });
@@ -76,7 +77,8 @@ router.put('/product/:id', function (req, res) {
                 price: {
                     value: req.body.price.value,
                     currency: req.body.price.currency
-                }
+                },
+                photos: req.body.photos
             }
         }, function (err, product) {
             res.json(product);
