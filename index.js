@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 const busboyBodyParser = require('busboy-body-parser');
+const server = require('http').createServer(app);
 
 app.use('/uploads', express.static('uploads'));
 app.use(busboyBodyParser());
@@ -32,5 +33,13 @@ app.use(require('./product.route'));
 app.use(require('./category.route'));
 app.use(require('./upload.route'));
 
+const io = require('socket.io')(server);
+io.on('connection', function (client) {
+    console.log('Client connected...');
+    client.emit('messages', {
+        hello: 'test'
+    });
+});
 
-app.listen(5000);
+
+server.listen(5000);
