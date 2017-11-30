@@ -9,7 +9,11 @@ const Product = new Schema({
         value: Number,
         currency: String
     },
-    photos: [String]
+    photos: [String],
+    promo: {
+        discount: Number,
+        until: Number
+    }
 });
 
 mongoose.model('Product', Product);

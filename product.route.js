@@ -65,6 +65,32 @@ router.post('/product', function (req, res) {
 
 });
 
+router.post('/product/promo', function (req, res) {
+
+    guard(req).then(_ => {
+        const promoObj = req.body;
+        const until = new Date().getTime() + promoObj.duration * 60 * 1000;
+        promoObj.products.forEach(productId => {
+            ProductModel.findByIdAndUpdate(productId, {
+                $set: {
+                    promo: {
+                        discount: promoObj.discount,
+                        until: until
+                    }
+                }
+            }, function (err, product) {
+            })
+        });
+
+        res.json({ok: true});
+
+    })
+        .catch(_ => {
+            res.send(401);
+        });
+
+});
+
 router.put('/product/:id', function (req, res) {
 
     guard(req).
