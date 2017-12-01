@@ -27,7 +27,7 @@ router.post('/order/:id/done', function (req, res) {
             $set: {
                 status: 'DONE',
             }
-        }, function (err, order) {
+        }, {new: true}, function (err, order) {
             res.json(order);
         });
     })
@@ -41,6 +41,10 @@ let checkIfStorageHasProducts = function (req) {
     return req.body.items.map(item => {
         return new Promise(function (resolve, reject) {
             ProductModel.findById(item._id, function (err, product) {
+                if (!product) {
+                    console.error('There is no such product', item);
+                    reject();
+                }
                 if (product.amount >= item.amount) {
                     resolve();
                 }
@@ -60,14 +64,10 @@ let decreateAndNotifyAmountChange = function (items) {
             $inc: {
                 amount: -item.amount
             }
-        }, function (err, product) {
-            console.log('test', err, product);
+        }, {new: true}, function (err, product) {
             socket.broadcast({
                 type: 'order.created',
-                product: {
-                    id: product._id,
-                    amount: product.amount
-                }
+                product: product
             });
         })
 

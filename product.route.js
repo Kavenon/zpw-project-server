@@ -34,7 +34,7 @@ router.delete('/product/:id', function (req, res) {
         ProductModel.findByIdAndRemove(id, function (dbRq, dbRs) {
             socket.broadcast({
                 type: 'product.deleted',
-                productId: id
+                product: dbRs
             });
             res.json({success: true});
         });
@@ -88,7 +88,7 @@ router.post('/product/promo', function (req, res) {
                         until: until
                     }
                 }
-            }, function (err, product) {
+            }, {new: true}, function (err, product) {
                 socket.broadcast({
                     type: 'product.promoted',
                     product: product
@@ -121,7 +121,7 @@ router.put('/product/:id', function (req, res) {
                 photos: req.body.photos,
                 amount: req.body.amount,
             }
-        }, function (err, product) {
+        }, {new: true}, function (err, product) {
             socket.broadcast({
                 type: 'product.changed',
                 product: product
