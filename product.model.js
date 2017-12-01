@@ -13,7 +13,8 @@ const Product = new Schema({
     promo: {
         discount: Number,
         until: Number
-    }
+    },
+    amount: Number
 });
 
 mongoose.model('Product', Product);

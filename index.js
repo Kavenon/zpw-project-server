@@ -33,13 +33,7 @@ app.use(require('./product.route'));
 app.use(require('./category.route'));
 app.use(require('./upload.route'));
 
-const io = require('socket.io')(server);
-io.on('connection', function (client) {
-    console.log('Client connected...');
-    client.emit('messages', {
-        hello: 'test'
-    });
-});
+require('./socket').init(server);
 
 
 server.listen(5000);

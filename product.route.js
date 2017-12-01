@@ -5,6 +5,7 @@ const _ = require('lodash');
 const router = express.Router();
 
 const ProductModel = require('./product.model');
+const socket = require('./socket');
 
 router.get('/product/all', function (req, res) {
 
@@ -31,6 +32,10 @@ router.delete('/product/:id', function (req, res) {
         const id = req.params.id;
 
         ProductModel.findByIdAndRemove(id, function (dbRq, dbRs) {
+            socket.broadcast({
+                type: 'product.deleted',
+                productId: id
+            });
             res.json({success: true});
         });
     })
@@ -54,8 +59,13 @@ router.post('/product', function (req, res) {
                 value: req.body.price.value,
                 currency: req.body.price.currency
             },
-            photos: req.body.photos
+            photos: req.body.photos,
+            amount: req.body.amount,
         }).save(function (err, product) {
+            socket.broadcast({
+                type: 'product.created',
+                product: product
+            });
             res.json(product);
         });
     })
@@ -79,6 +89,10 @@ router.post('/product/promo', function (req, res) {
                     }
                 }
             }, function (err, product) {
+                socket.broadcast({
+                    type: 'product.promoted',
+                    product: product
+                });
             })
         });
 
@@ -104,9 +118,14 @@ router.put('/product/:id', function (req, res) {
                     value: req.body.price.value,
                     currency: req.body.price.currency
                 },
-                photos: req.body.photos
+                photos: req.body.photos,
+                amount: req.body.amount,
             }
         }, function (err, product) {
+            socket.broadcast({
+                type: 'product.changed',
+                product: product
+            });
             res.json(product);
         })
     })

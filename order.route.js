@@ -4,6 +4,8 @@ const guard = require('./auth-guard');
 const router = express.Router();
 
 const OrderModel = require('./order.model');
+const socket = require('./socket');
+const ProductModel = require('./product.model');
 
 router.get('/order', function (req, res) {
 
@@ -35,30 +37,77 @@ router.post('/order/:id/done', function (req, res) {
 
 });
 
+let checkIfStorageHasProducts = function (req) {
+    return req.body.items.map(item => {
+        return new Promise(function (resolve, reject) {
+            ProductModel.findById(item._id, function (err, product) {
+                if (product.amount >= item.amount) {
+                    resolve();
+                }
+                else {
+                    console.error('No product in storage', item);
+                    reject();
+                }
+            });
+        });
+    });
+};
+let decreateAndNotifyAmountChange = function (items) {
+    items.map(item => {
+        console.log('testxx', item);
+
+        ProductModel.findByIdAndUpdate(item._id, {
+            $inc: {
+                amount: -item.amount
+            }
+        }, function (err, product) {
+            console.log('test', err, product);
+            socket.broadcast({
+                type: 'order.created',
+                product: {
+                    id: product._id,
+                    amount: product.amount
+                }
+            });
+        })
+
+    });
+};
 router.post('/order', function (req, res) {
 
-    const items = req.body.items.map(item => {
-        return {
-            name: item.name,
-            price: {
-                value: item.price.value,
-                currency: item.price.currency
-            },
-            amount: item.amount,
-        }
-    });
-    new OrderModel({
-        name: req.body.name,
-        street: req.body.street,
-        totalValue: {
-            value: req.body.totalValue.value,
-            currency: req.body.totalValue.currency
-        },
-        items: items,
-        status: req.body.status
-    }).save(function (err, product) {
-        res.json(product);
-    });
+    const promises = checkIfStorageHasProducts(req);
+
+    Promise.all(promises)
+        .then(function () {
+            const items = req.body.items.map(item => {
+                return {
+                    _id: item._id,
+                    name: item.name,
+                    price: {
+                        value: item.price.value,
+                        currency: item.price.currency
+                    },
+                    amount: item.amount,
+                }
+            });
+            new OrderModel({
+                name: req.body.name,
+                street: req.body.street,
+                totalValue: {
+                    value: req.body.totalValue.value,
+                    currency: req.body.totalValue.currency
+                },
+                items: items,
+                status: req.body.status
+            }).save(function (err, order) {
+                decreateAndNotifyAmountChange(items);
+                res.json(order);
+            });
+
+        })
+        .catch(function () {
+            res.status(400);
+        });
 
 });
 
