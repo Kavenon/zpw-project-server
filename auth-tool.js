@@ -1,6 +1,6 @@
 const admin = require("firebase-admin");
 
-export function getUid(auth) {
+module.exports = function (auth) {
     return new Promise((resolve, reject) => {
         let userp = admin.auth().verifyIdToken(auth);
         userp.then(user => {
@@ -13,4 +13,4 @@ export function getUid(auth) {
         })
             .catch(_ => resolve(null));
     })
-}
+};

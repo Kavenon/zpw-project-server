@@ -3,19 +3,29 @@ const Schema = mongoose.Schema;
 
 const Cart = new Schema({
     uid: String,
+    totalCount: Number,
     totalValue: {
         value: Number,
         currency: String
     },
     items: [{
-        name: String,
-        price: {
-            value: Number,
-            currency: String
-        },
-        amount: Number
+        amount: Number,
+        product: {
+            name: String,
+            categoryId: String,
+            description: String,
+            price: {
+                value: Number,
+                currency: String
+            },
+            photos: [String],
+            promo: {
+                discount: Number,
+                until: Number
+            },
+            amount: Number
+        }
     }],
-    status: String
 });
 
 mongoose.model('Cart', Cart);

@@ -51,6 +51,7 @@ app.use(require('./order.route'));
 app.use(require('./product.route'));
 app.use(require('./category.route'));
 app.use(require('./upload.route'));
+app.use(require('./cart.route'));
 
 
 require('./socket').init(server);
