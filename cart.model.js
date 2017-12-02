@@ -11,6 +11,7 @@ const Cart = new Schema({
     items: [{
         amount: Number,
         product: {
+            _id: String,
             name: String,
             categoryId: String,
             description: String,

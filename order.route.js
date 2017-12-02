@@ -7,6 +7,8 @@ const router = express.Router();
 const OrderModel = require('./order.model');
 const socket = require('./socket');
 const ProductModel = require('./product.model');
+const CartModel = require('./cart.model');
+
 const getUid = require('./auth-tool');
 
 let checkIfStorageHasProducts = function (req) {
@@ -17,12 +19,14 @@ let checkIfStorageHasProducts = function (req) {
                     console.error('There is no such product', item);
                     reject();
                 }
-                if (product.amount >= item.amount) {
-                    resolve();
-                }
                 else {
-                    console.error('No product in storage', item);
-                    reject();
+                    if (product.amount >= item.amount) {
+                        resolve();
+                    }
+                    else {
+                        console.error('No product in storage', item);
+                        reject();
+                    }
                 }
             });
         });
@@ -83,6 +87,12 @@ router.post('/order', function (req, res) {
     Promise.all(promises)
         .then(_ => getUid(req.query.auth))
         .then(function (uid) {
+
+            if (uid) {
+                CartModel.remove({uid: uid}, function (e, c) {
+                });
+            }
+
             const items = req.body.items.map(item => {
                 return {
                     _id: item._id,
