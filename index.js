@@ -3,6 +3,8 @@ const app = express();
 const bodyParser = require('body-parser');
 const busboyBodyParser = require('busboy-body-parser');
 const server = require('http').createServer(app);
+const authGuard = require('./auth-guard');
+const authAdmin = require('./auth-admin');
 
 app.use('/uploads', express.static('uploads'));
 app.use(busboyBodyParser());
@@ -28,10 +30,28 @@ db.once('open', function () {
 
 require('./auth');
 
+app.use('/admin*', function (req, res, next) {
+    authAdmin(req)
+        .then(_ => next())
+        .catch(_ => {
+            res.sendStatus(401);
+        });
+});
+
+app.use('/user*', function (req, res, next) {
+
+    authGuard(req)
+        .then(_ => next())
+        .catch(_ => {
+            res.sendStatus(401);
+        });
+});
+
 app.use(require('./order.route'));
 app.use(require('./product.route'));
 app.use(require('./category.route'));
 app.use(require('./upload.route'));
+
 
 require('./socket').init(server);
 

@@ -7,7 +7,7 @@ const router = express.Router();
 const ProductModel = require('./product.model');
 const socket = require('./socket');
 
-router.get('/product/all', function (req, res) {
+router.get('/admin/product/all', function (req, res) {
 
     ProductModel.find({}, function (dbRq, dbRs) {
         res.json(dbRs);
@@ -15,7 +15,7 @@ router.get('/product/all', function (req, res) {
 
 });
 
-router.get('/product/:id', function (req, res) {
+router.get('/admin/product/:id', function (req, res) {
 
     const id = req.params.id;
 
@@ -25,113 +25,88 @@ router.get('/product/:id', function (req, res) {
 
 });
 
-router.delete('/product/:id', function (req, res) {
+router.delete('/admin/product/:id', function (req, res) {
 
-    guard(req).
-    then(_ => {
-        const id = req.params.id;
+    const id = req.params.id;
 
-        ProductModel.findByIdAndRemove(id, function (dbRq, dbRs) {
-            socket.broadcast({
-                type: 'product.deleted',
-                product: dbRs
-            });
-            res.json({success: true});
+    ProductModel.findByIdAndRemove(id, function (dbRq, dbRs) {
+        socket.broadcast({
+            type: 'product.deleted',
+            product: dbRs
         });
-    })
-    .catch(_ => {
-        res.send(401);
+        res.json({success: true});
     });
-
 
 
 });
 
-router.post('/product', function (req, res) {
+router.post('/admin/product', function (req, res) {
 
-    guard(req).
-    then(_ => {
-        new ProductModel({
+    new ProductModel({
+        name: req.body.name,
+        description: req.body.description,
+        categoryId: req.body.categoryId,
+        price: {
+            value: req.body.price.value,
+            currency: req.body.price.currency
+        },
+        photos: req.body.photos,
+        amount: req.body.amount,
+    }).save(function (err, product) {
+        socket.broadcast({
+            type: 'product.created',
+            product: product
+        });
+        res.json(product);
+    });
+
+});
+
+router.post('/admin/product/promo', function (req, res) {
+
+    const promoObj = req.body;
+    const until = new Date().getTime() + promoObj.duration * 60 * 1000;
+    promoObj.products.forEach(productId => {
+        ProductModel.findByIdAndUpdate(productId, {
+            $set: {
+                promo: {
+                    discount: promoObj.discount,
+                    until: until
+                }
+            }
+        }, {new: true}, function (err, product) {
+            socket.broadcast({
+                type: 'product.promoted',
+                product: product
+            });
+        })
+    });
+
+    res.json({ok: true});
+
+});
+
+router.put('/admin/product/:id', function (req, res) {
+
+    ProductModel.findByIdAndUpdate(req.params.id, {
+        $set: {
             name: req.body.name,
-            description: req.body.description,
             categoryId: req.body.categoryId,
+            description: req.body.description,
             price: {
                 value: req.body.price.value,
                 currency: req.body.price.currency
             },
             photos: req.body.photos,
             amount: req.body.amount,
-        }).save(function (err, product) {
-            socket.broadcast({
-                type: 'product.created',
-                product: product
-            });
-            res.json(product);
+        }
+    }, {new: true}, function (err, product) {
+        socket.broadcast({
+            type: 'product.changed',
+            product: product
         });
+        res.json(product);
     })
-    .catch(_ => {
-        res.send(401);
-    });
-
-});
-
-router.post('/product/promo', function (req, res) {
-
-    guard(req).then(_ => {
-        const promoObj = req.body;
-        const until = new Date().getTime() + promoObj.duration * 60 * 1000;
-        promoObj.products.forEach(productId => {
-            ProductModel.findByIdAndUpdate(productId, {
-                $set: {
-                    promo: {
-                        discount: promoObj.discount,
-                        until: until
-                    }
-                }
-            }, {new: true}, function (err, product) {
-                socket.broadcast({
-                    type: 'product.promoted',
-                    product: product
-                });
-            })
-        });
-
-        res.json({ok: true});
-
-    })
-        .catch(_ => {
-            res.send(401);
-        });
-
-});
-
-router.put('/product/:id', function (req, res) {
-
-    guard(req).
-    then(_ => {
-        ProductModel.findByIdAndUpdate(req.params.id, {
-            $set: {
-                name: req.body.name,
-                categoryId: req.body.categoryId,
-                description: req.body.description,
-                price: {
-                    value: req.body.price.value,
-                    currency: req.body.price.currency
-                },
-                photos: req.body.photos,
-                amount: req.body.amount,
-            }
-        }, {new: true}, function (err, product) {
-            socket.broadcast({
-                type: 'product.changed',
-                product: product
-            });
-            res.json(product);
-        })
-    })
-    .catch(_ => {
-        res.send(401);
-    });
 
 });
 

@@ -7,52 +7,7 @@ const router = express.Router();
 const OrderModel = require('./order.model');
 const socket = require('./socket');
 const ProductModel = require('./product.model');
-
-router.get('/order', function (req, res) {
-
-    guard(req).then(_ => {
-        OrderModel.find({}, function (dbRq, dbRs) {
-            res.json(dbRs);
-        })
-    })
-        .catch(_ => {
-            res.send(401);
-        });
-
-});
-
-router.get('/order/me', function (req, res) {
-
-    guard(req)
-        .then(getUid)
-        .then(uid => {
-            OrderModel.find({uid: uid}, function (dbRq, dbRs) {
-                res.json(dbRs);
-            })
-        })
-        .catch(_ => {
-            res.send(401);
-        });
-
-});
-
-router.post('/order/:id/done', function (req, res) {
-
-    guard(req)
-        .then(_ => {
-            OrderModel.findByIdAndUpdate(req.params.id, {
-                $set: {
-                    status: 'DONE',
-                }
-            }, {new: true}, function (err, order) {
-                res.json(order);
-            });
-        })
-        .catch(_ => {
-            res.send(401);
-        });
-
-});
+const getUid = require('./auth-tool');
 
 let checkIfStorageHasProducts = function (req) {
     return req.body.items.map(item => {
@@ -75,8 +30,6 @@ let checkIfStorageHasProducts = function (req) {
 };
 let decreateAndNotifyAmountChange = function (items) {
     items.map(item => {
-        console.log('testxx', item);
-
         ProductModel.findByIdAndUpdate(item._id, {
             $inc: {
                 amount: -item.amount
@@ -90,12 +43,45 @@ let decreateAndNotifyAmountChange = function (items) {
 
     });
 };
+
+router.get('/admin/order', function (req, res) {
+
+    OrderModel.find({}, function (dbRq, dbRs) {
+        res.json(dbRs);
+    })
+
+});
+
+router.get('/user/order', function (req, res) {
+
+    guard(req)
+        .then(user => {
+            OrderModel.find({uid: user.uid}, function (dbRq, dbRs) {
+                res.json(dbRs);
+            })
+        })
+
+});
+
+router.post('/admin/order/:id/done', function (req, res) {
+
+    OrderModel.findByIdAndUpdate(req.params.id, {
+        $set: {
+            status: 'DONE',
+        }
+    }, {new: true}, function (err, order) {
+        res.json(order);
+    });
+
+});
+
+
 router.post('/order', function (req, res) {
 
     const promises = checkIfStorageHasProducts(req);
 
     Promise.all(promises)
-        .then(getUid)
+        .then(_ => getUid(req.query.auth))
         .then(function (uid) {
             const items = req.body.items.map(item => {
                 return {
@@ -129,20 +115,5 @@ router.post('/order', function (req, res) {
         });
 
 });
-
-function getUid() {
-    return new Promise((resolve, reject) => {
-        let userp = admin.auth().createUser();
-        userp.then(user => {
-            if (user) {
-                resolve(user.uid);
-            }
-            else {
-                resolve(null);
-            }
-        })
-            .catch(_ => resolve(null));
-    })
-}
 
 module.exports = router;
