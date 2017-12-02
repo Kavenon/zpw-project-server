@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const Order = new Schema({
+    uid: String,
     name: String,
     street: String,
     totalValue: {

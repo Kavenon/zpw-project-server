@@ -1,3 +1,4 @@
+const admin = require("firebase-admin");
 const express = require('express');
 const guard = require('./auth-guard');
 
@@ -14,23 +15,39 @@ router.get('/order', function (req, res) {
             res.json(dbRs);
         })
     })
-    .catch(_ => {
-        res.send(401);
-    });
+        .catch(_ => {
+            res.send(401);
+        });
+
+});
+
+router.get('/order/me', function (req, res) {
+
+    guard(req)
+        .then(getUid)
+        .then(uid => {
+            OrderModel.find({uid: uid}, function (dbRq, dbRs) {
+                res.json(dbRs);
+            })
+        })
+        .catch(_ => {
+            res.send(401);
+        });
 
 });
 
 router.post('/order/:id/done', function (req, res) {
 
-    guard(req).then(_ => {
-        OrderModel.findByIdAndUpdate(req.params.id, {
-            $set: {
-                status: 'DONE',
-            }
-        }, {new: true}, function (err, order) {
-            res.json(order);
-        });
-    })
+    guard(req)
+        .then(_ => {
+            OrderModel.findByIdAndUpdate(req.params.id, {
+                $set: {
+                    status: 'DONE',
+                }
+            }, {new: true}, function (err, order) {
+                res.json(order);
+            });
+        })
         .catch(_ => {
             res.send(401);
         });
@@ -78,7 +95,8 @@ router.post('/order', function (req, res) {
     const promises = checkIfStorageHasProducts(req);
 
     Promise.all(promises)
-        .then(function () {
+        .then(getUid)
+        .then(function (uid) {
             const items = req.body.items.map(item => {
                 return {
                     _id: item._id,
@@ -91,6 +109,7 @@ router.post('/order', function (req, res) {
                 }
             });
             new OrderModel({
+                uid: uid,
                 name: req.body.name,
                 street: req.body.street,
                 totalValue: {
@@ -110,5 +129,20 @@ router.post('/order', function (req, res) {
         });
 
 });
+
+function getUid() {
+    return new Promise((resolve, reject) => {
+        let userp = admin.auth().createUser();
+        userp.then(user => {
+            if (user) {
+                resolve(user.uid);
+            }
+            else {
+                resolve(null);
+            }
+        })
+            .catch(_ => resolve(null));
+    })
+}
 
 module.exports = router;
